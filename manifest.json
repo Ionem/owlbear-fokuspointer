@@ -1,0 +1,8 @@
+{
+  "name": "GM Tools – Fokuspointer",
+  "version": "0.1.0",
+  "manifest_version": 1,
+  "description": "Großer, frei einstellbarer Live-Pointer für Owlbear Rodeo.",
+  "icon": "/pointer.svg",
+  "background_url": "/index.html"
+}

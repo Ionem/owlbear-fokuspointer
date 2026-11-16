@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="./pointer.svg" />
+  <title>Fokuspointer · Einstellungen</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="head">
+    <div class="ident">
+      <img src="./pointer.svg" alt="" width="34" height="34" />
+      <div><h1>Fokuspointer</h1><p>GM TOOLS <span class="divider">/</span> V 0.1.0</p></div>
+    </div>
+    <span id="state" class="state" aria-live="polite">Laden …</span>
+  </header>
+  <main>
+    <section>
+      <div class="heading"><label for="size">Radius</label><output id="sizeValue">85 px</output></div>
+      <input type="range" id="size" min="16" max="300" step="1" value="85" aria-label="Pointer-Radius" />
+      <div class="presets" id="presets">
+        <button type="button" data-multiplier="0" data-screen="35" data-map="65">Klein</button>
+        <button type="button" data-multiplier="1" data-screen="70" data-map="170">Mittel</button>
+        <button type="button" data-multiplier="2" data-screen="130" data-map="430">Groß</button>
+        <button type="button" data-multiplier="3" data-screen="220" data-map="1100">XXL</button>
+      </div>
+    </section>
+    <section>
+      <div class="heading"><label>Skalierung</label></div>
+      <div class="mode-switch" role="group" aria-label="Skalierung">
+        <button type="button" id="modeScreen" class="selected" aria-pressed="true">Bildschirm</button>
+        <button type="button" id="modeMap" aria-pressed="false">Karte</button>
+      </div>
+      <p class="hint" id="modeHint">Zoomkompensiert am steuernden Bildschirm. Bei anderen Zoomstufen kann die Größe abweichen.</p>
+    </section>
+    <section>
+      <div class="heading"><label for="customColor">Farbe</label><span id="colorValue">#FF554E</span></div>
+      <div class="colors" id="colors">
+        <button type="button" data-color="#ff554e" style="--swatch:#ff554e" aria-label="Rot" title="Rot"></button>
+        <button type="button" data-color="#f8ca47" style="--swatch:#f8ca47" aria-label="Gelb" title="Gelb"></button>
+        <button type="button" data-color="#43d3dc" style="--swatch:#43d3dc" aria-label="Türkis" title="Türkis"></button>
+        <button type="button" data-color="#a6e76b" style="--swatch:#a6e76b" aria-label="Grün" title="Grün"></button>
+        <button type="button" data-color="#f7f2e5" style="--swatch:#f7f2e5" aria-label="Elfenbein" title="Elfenbein"></button>
+        <label class="color-custom" title="Eigene Farbe"><input type="color" id="customColor" value="#ff554e" aria-label="Eigene Farbe auswählen" /><span>+</span></label>
+      </div>
+    </section>
+    <section class="row-section">
+      <label for="flashMs">Klick-Ping</label>
+      <select id="flashMs">
+        <option value="500">0,5 Sekunden</option>
+        <option value="950">1 Sekunde</option>
+        <option value="1700">1,7 Sekunden</option>
+        <option value="3000">3 Sekunden</option>
+      </select>
+    </section>
+    <footer>
+      <div class="mini-preview" aria-hidden="true"><span id="previewDot"></span></div>
+      <div class="footer-text"><strong>Klicken:</strong> kurzer Ping<br /><strong>Ziehen:</strong> Live-Pointer</div>
+    </footer>
+  </main>
+  <script type="module" src="./settings.js"></script>
+</body>
+</html>
