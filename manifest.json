@@ -3,6 +3,6 @@
   "version": "0.1.0",
   "manifest_version": 1,
   "description": "Großer, frei einstellbarer Live-Pointer für Owlbear Rodeo.",
-  "icon": "/pointer.svg",
-  "background_url": "/index.html"
+  "icon": "https://ionem.github.io/owlbear-fokuspointer/pointer.svg",
+  "background_url": "https://ionem.github.io/owlbear-fokuspointer/index.html"
 }
