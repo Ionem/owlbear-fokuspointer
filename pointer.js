@@ -1,8 +1,8 @@
-/* GM Tools · Fokuspointer 0.1.0
+/* GM Tools · Fokuspointer 0.2.0
  * Ein eigenes Werkzeug ohne persistente Kartenobjekte.
  * Das Owlbear-SDK wird als Browser-ES-Modul geladen (kein lokaler Build nötig).
  */
-import OBR, { buildPointer } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
+import OBR, { buildPointer, buildShape } from "https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm";
 
 const PREFIX = "de.gmtools.fokuspointer";
 const TOOL_ID = `${PREFIX}/tool`;
@@ -14,6 +14,8 @@ const DEFAULTS = Object.freeze({
   screenRadius: 85,        // angezeigter Kreisradius in Bildschirm-Pixeln (bei gleichem Zoom)
   mapRadius: 240,          // Radius in Karten-Pixeln
   color: "#ff554e",
+  display: "ring",        // "ring" = durchsichtiger Kreis; "pointer" = nativer Pointer
+  ringStrokePx: 5,        // Konturstärke in angezeigten Pixeln (Sender)
   flashMs: 950,           // Dauer eines kurzen Klick-Pings
 });
 
@@ -25,6 +27,8 @@ function parseSettings(meta = {}) {
     ? raw.color : DEFAULTS.color;
   return {
     mode: raw.mode === "map" ? "map" : "screen",
+    display: raw.display === "pointer" ? "pointer" : "ring",
+    ringStrokePx: clamp(Number(raw.ringStrokePx) || DEFAULTS.ringStrokePx, 2, 12),
     screenRadius: clamp(Number(raw.screenRadius) || DEFAULTS.screenRadius, 16, 300),
     mapRadius: clamp(Number(raw.mapRadius) || DEFAULTS.mapRadius, 15, 2500),
     flashMs: clamp(Number(raw.flashMs) || DEFAULTS.flashMs, 300, 3500),
@@ -37,26 +41,57 @@ function showError(message, error) {
   OBR.notification.show(`${message} – Browserkonsole prüfen.`, "ERROR").catch(console.error);
 }
 
-async function determineRadius(settings) {
-  if (settings.mode === "map") return settings.mapRadius;
+async function determineGeometry(settings) {
   // Owlbear rendert Pointer als Objekte im Kartenraum. Radius wird daher
   // anhand des lokalen Zoomfaktors kompensiert. Andere Clients können
   // bei unabhängigem Zoom eine abweichende sichtbare Größe erhalten.
+  let scale = 1;
   try {
-    const scale = await OBR.viewport.getScale();
-    if (Number.isFinite(scale) && scale > 0) {
-      return clamp(settings.screenRadius / scale, 1, 40000);
-    }
+    const zoom = await OBR.viewport.getScale();
+    if (Number.isFinite(zoom) && zoom > 0) scale = zoom;
   } catch (error) {
     console.warn("[Fokuspointer] Zoomfaktor konnte nicht gelesen werden", error);
   }
-  return settings.screenRadius;
+  const radius = settings.mode === "map"
+    ? settings.mapRadius
+    : clamp(settings.screenRadius / scale, 1, 40000);
+  // Die Strichbreite bleibt am steuernden Bildschirm erkennbar,
+  // auch wenn der Kartenmodus gewählt wurde.
+  const strokeWidth = Math.min(
+    clamp(settings.ringStrokePx / scale, 0.5, 1000),
+    radius * 0.6
+  );
+  return { radius, strokeWidth };
 }
 
-function createPointer(position, settings, radius) {
+function itemPosition(position, settings, radius) {
+  // Shapes sind von ihrer linken oberen Ecke positioniert, native Pointer
+  // dagegen um ihren Mittelpunkt. Dadurch bleibt die Maus im Ringzentrum.
+  if (settings.display === "ring") {
+    return { x: position.x - radius, y: position.y - radius };
+  }
+  return { ...position };
+}
+
+function createVisual(position, settings, geometry) {
+  if (settings.display === "ring") {
+    return buildShape()
+      .shapeType("CIRCLE")
+      .name("GM Tools · Fokusring")
+      .layer("POINTER")
+      .disableHit(true)
+      .width(2 * geometry.radius)
+      .height(2 * geometry.radius)
+      .position(itemPosition(position, settings, geometry.radius))
+      .fillOpacity(0)
+      .strokeColor(settings.color)
+      .strokeOpacity(1)
+      .strokeWidth(geometry.strokeWidth)
+      .build();
+  }
   return buildPointer()
     .color(settings.color)
-    .radius(radius)
+    .radius(geometry.radius)
     .position(position)
     .build();
 }
@@ -69,7 +104,7 @@ function updateDragPosition(current) {
   if (!current || !current.active || !current.manager) return;
   try {
     current.manager[0]((pointer) => {
-      pointer.position = { ...current.latest };
+      pointer.position = itemPosition(current.latest, current.settings, current.radius);
     });
   } catch (error) {
     showError("Pointer-Bewegung fehlgeschlagen", error);
@@ -102,12 +137,14 @@ async function beginDrag(context, event) {
     manager: null,
     latest: { ...event.pointerPosition },
     settings: parseSettings(context.metadata),
+    radius: 0,
   };
   drag = current;
   try {
-    const radius = await determineRadius(current.settings);
+    const geometry = await determineGeometry(current.settings);
     if (!current.active) return;
-    const pointer = createPointer(current.latest, current.settings, radius);
+    current.radius = geometry.radius;
+    const pointer = createVisual(current.latest, current.settings, geometry);
     const manager = await OBR.interaction.startItemInteraction(pointer);
     if (!current.active || drag !== current) {
       manager[1]();
@@ -125,9 +162,9 @@ async function clickPing(context, event) {
   const settings = parseSettings(context.metadata);
   let manager = null;
   try {
-    const radius = await determineRadius(settings);
+    const geometry = await determineGeometry(settings);
     manager = await OBR.interaction.startItemInteraction(
-      createPointer(event.pointerPosition, settings, radius)
+      createVisual(event.pointerPosition, settings, geometry)
     );
     clickPings.add(manager);
     setTimeout(() => {
@@ -185,7 +222,7 @@ async function install() {
         url: asset("./settings.html"),
         anchorElementId: elementId,
         width: 344,
-        height: 510,
+        height: 640,
       }).catch(error => showError("Einstellungen konnten nicht geöffnet werden", error));
     },
   });
@@ -196,7 +233,7 @@ async function install() {
   OBR.tool.onToolModeChange((id) => {
     if (id !== MODE_ID) endDrag();
   });
-  console.info("[Fokuspointer] 0.1.0 registriert");
+  console.info("[Fokuspointer] 0.2.0 registriert");
 }
 
 OBR.onReady(() => {

@@ -1,6 +1,6 @@
 {
   "name": "GM Tools – Fokuspointer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "manifest_version": 1,
   "description": "Großer, frei einstellbarer Live-Pointer für Owlbear Rodeo.",
   "icon": "https://ionem.github.io/owlbear-fokuspointer/pointer.svg",

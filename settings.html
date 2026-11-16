@@ -11,11 +11,23 @@
   <header class="head">
     <div class="ident">
       <img src="./pointer.svg" alt="" width="34" height="34" />
-      <div><h1>Fokuspointer</h1><p>GM TOOLS <span class="divider">/</span> V 0.1.0</p></div>
+      <div><h1>Fokuspointer</h1><p>GM TOOLS <span class="divider">/</span> V 0.2.0</p></div>
     </div>
     <span id="state" class="state" aria-live="polite">Laden …</span>
   </header>
   <main>
+    <section>
+      <div class="heading"><label>Darstellung</label></div>
+      <div class="mode-switch" role="group" aria-label="Darstellungsart">
+        <button type="button" id="styleRing" class="selected" aria-pressed="true">Fokusring</button>
+        <button type="button" id="stylePointer" aria-pressed="false">Pointer</button>
+      </div>
+      <p class="hint">Fokusring: innen durchsichtig, ohne Bewegungsspur. Pointer: bisherige gefüllte Darstellung mit Spur.</p>
+      <div id="strokeSection" class="stroke-control">
+        <div class="heading"><label for="strokeWidth">Ringkontur</label><output id="strokeWidthValue">5 px</output></div>
+        <input type="range" id="strokeWidth" min="2" max="12" step="1" value="5" aria-label="Konturstärke des Rings" />
+      </div>
+    </section>
     <section>
       <div class="heading"><label for="size">Radius</label><output id="sizeValue">85 px</output></div>
       <input type="range" id="size" min="16" max="300" step="1" value="85" aria-label="Pointer-Radius" />
@@ -56,7 +68,7 @@
     </section>
     <footer>
       <div class="mini-preview" aria-hidden="true"><span id="previewDot"></span></div>
-      <div class="footer-text"><strong>Klicken:</strong> kurzer Ping<br /><strong>Ziehen:</strong> Live-Pointer</div>
+      <div class="footer-text"><strong id="previewLabel">Fokusring · freie Sicht</strong><br /><strong>Klicken:</strong> kurzer Ping · <strong>Ziehen:</strong> Live</div>
     </footer>
   </main>
   <script type="module" src="./settings.js"></script>

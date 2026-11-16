@@ -5,6 +5,7 @@ const TOOL_ID = "de.gmtools.fokuspointer/tool";
 const DEFAULTS = {
   mode: "screen", screenRadius: 85, mapRadius: 240,
   color: "#ff554e", flashMs: 950,
+  display: "ring", ringStrokePx: 5,
 };
 let settings = { ...DEFAULTS };
 let initialized = false;
@@ -16,6 +17,8 @@ const clamp = (v,min,max) => Math.max(min, Math.min(max,v));
 function sanitize(meta) {
   return {
     mode: meta?.mode === "map" ? "map" : "screen",
+    display: meta?.display === "pointer" ? "pointer" : "ring",
+    ringStrokePx: clamp(Number(meta?.ringStrokePx) || 5, 2, 12),
     screenRadius: clamp(Number(meta?.screenRadius) || 85,16,300),
     mapRadius: clamp(Number(meta?.mapRadius) || 240,15,2500),
     color: /^#[0-9a-f]{6}$/i.test(meta?.color) ? meta.color : "#ff554e",
@@ -23,6 +26,14 @@ function sanitize(meta) {
   };
 }
 function updateUi() {
+  const ring = settings.display === "ring";
+  $("#styleRing").classList.toggle("selected", ring);
+  $("#stylePointer").classList.toggle("selected", !ring);
+  $("#styleRing").setAttribute("aria-pressed", String(ring));
+  $("#stylePointer").setAttribute("aria-pressed", String(!ring));
+  $("#strokeSection").hidden = !ring;
+  $("#strokeWidth").value = String(settings.ringStrokePx);
+  $("#strokeWidthValue").textContent = `${settings.ringStrokePx} px`;
   const screen = settings.mode === "screen";
   const size = screen ? settings.screenRadius : settings.mapRadius;
   const slider = $("#size");
@@ -55,8 +66,10 @@ function updateUi() {
   dot.style.width = `${width}px`;
   dot.style.height = `${width}px`;
   dot.style.borderColor = settings.color;
-  dot.style.boxShadow = `0 0 11px ${settings.color}77`;
-  dot.style.background = `${settings.color}23`;
+  dot.style.borderWidth = ring ? `${settings.ringStrokePx / 2}px` : "2px";
+  dot.style.boxShadow = ring ? "none" : `0 0 11px ${settings.color}77`;
+  dot.style.background = ring ? "transparent" : settings.color;
+  $("#previewLabel").textContent = ring ? "Fokusring · freie Sicht" : "Gefüllter Pointer";
 }
 function status(message) { $("#state").textContent = message; }
 // Serialisierte Schreibvorgänge, damit rasche Preset-Wechsel nicht überschreiben.
@@ -76,6 +89,11 @@ function change(patch, persist=true) {
   if (persist) save();
 }
 function wire() {
+  $("#styleRing").addEventListener("click", () => change({display:"ring"}));
+  $("#stylePointer").addEventListener("click", () => change({display:"pointer"}));
+  const stroke = $("#strokeWidth");
+  stroke.addEventListener("input", () => change({ringStrokePx:Number(stroke.value)}, false));
+  stroke.addEventListener("change", () => save());
   $("#modeScreen").addEventListener("click", () => change({mode:"screen"}));
   $("#modeMap").addEventListener("click", () => change({mode:"map"}));
   const range = $("#size");
